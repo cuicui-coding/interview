@@ -1,0 +1,3087 @@
+/**(function() {
+
+    'use strict';
+
+    angular.module('underscore', []).factory('_', [ '$window', function($window) {
+
+        $window._.mixin($window.s.exports());
+
+        return $window._;
+
+    } ]);
+
+    angular.module('nextGmoApp.vendor', [ 'ui.router', 'ngAnimate', 'ngResource', 'oc.lazyLoad', 'underscore' ]);
+
+    angular.module('nextGmoApp.services', []);
+
+    angular.module('nextGmoApp.directives', [ 'downloadcenter' ]);
+
+    angular.module('nextGmoApp.widgets', []);
+
+    angular.module('nextGmoApp', [ 'nextGmoApp.vendor', 'nextGmoApp.services', 'nextGmoApp.directives', 'nextGmoApp.widgets' ]);
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    angular.module('nextGmoApp').constant('SITE_CONST', {
+
+        NAME: 'State Street Global Markets',
+
+        ROOT_STATE: 'site',
+
+        PACK_PREFIX: 'ssa-ngmo.'
+
+    });
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    function appConfig($httpProvider, $stateProvider, $urlRouterProvider, $logProvider, $resourceProvider, $ocLazyLoadProvider, SITE_CONST) {
+
+        $httpProvider.useApplyAsync(true);
+
+        $httpProvider.useLegacyPromiseExtensions(false);
+
+        $httpProvider.defaults.cache = false;
+
+        $httpProvider.interceptors.push('gmoHttpInterceptor');
+
+        $resourceProvider.defaults.stripTrailingSlashes = false;
+
+        $logProvider.debugEnabled(true);
+
+        $urlRouterProvider.otherwise('/home/');
+
+        $stateProvider.state(SITE_CONST.ROOT_STATE, {
+
+            data: {
+
+                siteName: SITE_CONST.NAME
+
+            },
+
+            abstract: true,
+
+            url: '/',
+
+            views: {
+
+                'site_header@': {
+
+                    templateUrl: 'views/components/site_header.html',
+
+                    controller: 'SiteHeaderController',
+
+                    controllerAs: 'siteHeaderCtrl'
+
+                },
+
+                'site_banner@site': {
+
+                    templateUrl: 'views/components/site_banner.html'
+
+                },
+
+                'site_menu@site': {
+
+                    templateUrl: 'views/components/site_menu.html'
+
+                },
+
+                'site_breadcrumb@': {
+
+                    templateUrl: 'views/components/site_breadcrumb.html',
+
+                    controller: 'SiteBreadcrumbController',
+
+                    controllerAs: 'siteBreadcrumbCtrl'
+
+                },
+
+                'mod_deck@': {
+
+                    template: '<ui-view/>'
+
+                },
+
+                'site_footer@': {
+
+                    templateUrl: 'views/components/site_footer.html',
+
+                    controller: 'SiteFooterController',
+
+                    controllerAs: 'siteFooterCtrl'
+
+                }
+
+            }
+
+        });
+
+    }
+
+    appConfig.$inject = [ '$httpProvider', '$stateProvider', '$urlRouterProvider', '$logProvider', '$resourceProvider', '$ocLazyLoadProvider', 'SITE_CONST' ];
+
+    function initApp($rootScope, $window, $location, $log, gmoTrackingService, gmoStateService, gmoSessionService) {
+
+        $log.debug('==== Site initializing... ====');
+
+        gmoSessionService.startIdleSessionTimer();
+
+        $rootScope.$on('$stateChangeStart', function(event, toState, toParams, fromState, fromParams) {
+
+            $log.debug('====>>> Entering\t `' + toState.data.pageName + '`\t[authorization checking...]');
+
+        });
+
+        $rootScope.$on('$stateChangeSuccess', function(event, toState, toParams, fromState, fromParams) {
+
+            gmoStateService.setCurrentState(toState);
+
+            $window.document.title = toState.data.siteName + ' | ' + (toState.data.pageName || '') + ' | ' + (toState.data.viewName || '');
+
+            gmoTrackingService.trackPageView($location.absUrl());
+
+            $log.debug('====>>> Entered \t `' + toState.data.pageName + '`\t[authorization check passed]');
+
+        });
+
+    }
+
+    initApp.$inject = [ '$rootScope', '$window', '$location', '$log', 'gmoTrackingService', 'gmoStateService', 'gmoSessionService' ];
+
+    angular.module('nextGmoApp').config(appConfig).run(initApp);
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    angular.module('nextGmoApp').constant('BEHAVIOURAL_PTL_CONST', {
+
+        MOD_NAME: 'Behavioural Portal',
+
+        MOD_ID: 'behavioural_portal',
+
+        MOD_DIR: 'modules/behavioural_portal',
+
+        MOD_DIST_DIR: 'modules/behavioural_portal/dist',
+
+        CTX_ROOT: 'behavioural'
+
+    });
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    angular.module('nextGmoApp').config([ '$stateProvider', '$ocLazyLoadProvider', 'SITE_CONST', 'BEHAVIOURAL_PTL_CONST', function($stateProvider, $ocLazyLoadProvider, SITE_CONST, BEHAVIOURAL_PTL_CONST) {
+
+        $ocLazyLoadProvider.config({
+
+            modules: [ {
+
+                name: BEHAVIOURAL_PTL_CONST.MOD_ID,
+
+                files: [ BEHAVIOURAL_PTL_CONST.MOD_DIST_DIR + '/' + SITE_CONST.PACK_PREFIX + BEHAVIOURAL_PTL_CONST.MOD_ID + '.min.js', BEHAVIOURAL_PTL_CONST.MOD_DIST_DIR + '/' + SITE_CONST.PACK_PREFIX + BEHAVIOURAL_PTL_CONST.MOD_ID + '.min.css' ]
+
+            } ]
+
+        });
+
+        var MOD_ROOT_STATE = SITE_CONST.ROOT_STATE + '.' + BEHAVIOURAL_PTL_CONST.CTX_ROOT;
+
+        $stateProvider.state(MOD_ROOT_STATE, {
+
+            data: {
+
+                pageId: BEHAVIOURAL_PTL_CONST.MOD_ID,
+
+                pageName: BEHAVIOURAL_PTL_CONST.MOD_NAME
+
+            },
+
+            abstract: true,
+
+            url: BEHAVIOURAL_PTL_CONST.CTX_ROOT,
+
+            template: '<ui-view/>',
+
+            resolve: {
+
+                lazyLoad: [ '$ocLazyLoad', function($ocLazyLoad) {
+
+                    return $ocLazyLoad.load(BEHAVIOURAL_PTL_CONST.MOD_ID);
+
+                } ]
+
+            }
+
+        }).state(MOD_ROOT_STATE + '.index', {
+
+            data: {
+
+                viewName: 'Index Page'
+
+            },
+
+            url: '/',
+
+            templateUrl: BEHAVIOURAL_PTL_CONST.MOD_DIR + '/views/index.html',
+
+            controller: 'BehaviouralPtlController',
+
+            controllerAs: 'behaviouralPtlCtrl'
+
+        });
+
+    } ]);
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    angular.module('nextGmoApp').constant('DOWNLOADCENTER_CONST', {
+
+        MOD_NAME: 'Download Center',
+
+        MOD_ID: 'downloadcenter',
+
+        MOD_DIR: 'modules/downloadcenter',
+
+        MOD_DIST_DIR: 'modules/downloadcenter/dist',
+
+        CTX_ROOT: 'downloadcenter'
+
+    });
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    angular.module('nextGmoApp').config([ '$stateProvider', '$ocLazyLoadProvider', 'SITE_CONST', 'DOWNLOADCENTER_CONST', function($stateProvider, $ocLazyLoadProvider, SITE_CONST, DOWNLOADCENTER_CONST) {
+
+        $ocLazyLoadProvider.config({
+
+            modules: [ {
+
+                name: DOWNLOADCENTER_CONST.MOD_ID,
+
+                files: [ DOWNLOADCENTER_CONST.MOD_DIST_DIR + '/' + SITE_CONST.PACK_PREFIX + DOWNLOADCENTER_CONST.MOD_ID + '.min.js', DOWNLOADCENTER_CONST.MOD_DIST_DIR + '/' + SITE_CONST.PACK_PREFIX + DOWNLOADCENTER_CONST.MOD_ID + '.min.css' ]
+
+            } ]
+
+        });
+
+        var MOD_ROOT_STATE = SITE_CONST.ROOT_STATE + '.' + DOWNLOADCENTER_CONST.CTX_ROOT;
+
+        $stateProvider.state(MOD_ROOT_STATE, {
+
+            data: {
+
+                pageId: DOWNLOADCENTER_CONST.MOD_ID,
+
+                pageName: DOWNLOADCENTER_CONST.MOD_NAME
+
+            },
+
+            abstract: true,
+
+            url: DOWNLOADCENTER_CONST.CTX_ROOT,
+
+            template: '<ui-view/>',
+
+            resolve: {
+
+                lazyLoad: [ '$ocLazyLoad', function($ocLazyLoad) {
+
+                    return $ocLazyLoad.load(DOWNLOADCENTER_CONST.MOD_ID);
+
+                } ]
+
+            }
+
+        }).state(MOD_ROOT_STATE + '.index', {
+
+            data: {
+
+                viewName: 'Index Page'
+
+            },
+
+            url: '/',
+
+            templateUrl: DOWNLOADCENTER_CONST.MOD_DIR + '/views/index.html'
+
+        });
+
+    } ]);
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    angular.module('nextGmoApp').constant('HOME_CONST', {
+
+        CTX_ROOT: 'home',
+
+        MOD_NAME: 'Home',
+
+        MOD_ID: 'home',
+
+        MOD_DIR: 'modules/home',
+
+        MOD_DIST_DIR: 'modules/home/dist'
+
+    });
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    angular.module('nextGmoApp').config([ '$stateProvider', '$ocLazyLoadProvider', 'SITE_CONST', 'HOME_CONST', function($stateProvider, $ocLazyLoadProvider, SITE_CONST, HOME_CONST) {
+
+        $ocLazyLoadProvider.config({
+
+            modules: [ {
+
+                name: HOME_CONST.MOD_ID,
+
+                files: [ HOME_CONST.MOD_DIST_DIR + '/' + SITE_CONST.PACK_PREFIX + HOME_CONST.MOD_ID + '.min.js', HOME_CONST.MOD_DIST_DIR + '/' + SITE_CONST.PACK_PREFIX + HOME_CONST.MOD_ID + '.min.css' ]
+
+            } ]
+
+        });
+
+        var MOD_ROOT_STATE = SITE_CONST.ROOT_STATE + '.' + HOME_CONST.CTX_ROOT;
+
+        $stateProvider.state(MOD_ROOT_STATE, {
+
+            data: {
+
+                pageId: HOME_CONST.MOD_ID,
+
+                pageName: HOME_CONST.MOD_NAME
+
+            },
+
+            url: HOME_CONST.CTX_ROOT,
+
+            abstract: true,
+
+            template: '<ui-view/>',
+
+            resolve: {
+
+                lazyLoad: [ '$ocLazyLoad', function($ocLazyLoad) {
+
+                    return $ocLazyLoad.load(HOME_CONST.MOD_ID);
+
+                } ]
+
+            }
+
+        }).state(MOD_ROOT_STATE + '.index', {
+
+            data: {
+
+                viewName: 'Index Page'
+
+            },
+
+            url: '/',
+
+            templateUrl: HOME_CONST.MOD_DIR + '/views/index.html',
+
+            controller: 'HomeController',
+
+            controllerAs: 'homeCtrl'
+
+        });
+
+    } ]);
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    angular.module('nextGmoApp').constant('MACROSTRATEGY_PTL_CONST', {
+
+        MOD_NAME: 'Macro Strategy Portal',
+
+        MOD_ID: 'macro-strategy_portal',
+
+        MOD_DIR: 'modules/macro-strategy_portal',
+
+        MOD_DIST_DIR: 'modules/macro-strategy_portal/dist',
+
+        CTX_ROOT: 'macro-strategy'
+
+    });
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    angular.module('nextGmoApp').config([ '$stateProvider', '$ocLazyLoadProvider', 'SITE_CONST', 'MACROSTRATEGY_PTL_CONST', function($stateProvider, $ocLazyLoadProvider, SITE_CONST, MACROSTRATEGY_PTL_CONST) {
+
+        $ocLazyLoadProvider.config({
+
+            modules: [ {
+
+                name: MACROSTRATEGY_PTL_CONST.MOD_ID,
+
+                files: [ MACROSTRATEGY_PTL_CONST.MOD_DIST_DIR + '/' + SITE_CONST.PACK_PREFIX + MACROSTRATEGY_PTL_CONST.MOD_ID + '.min.js', MACROSTRATEGY_PTL_CONST.MOD_DIST_DIR + '/' + SITE_CONST.PACK_PREFIX + MACROSTRATEGY_PTL_CONST.MOD_ID + '.min.css' ]
+
+            } ]
+
+        });
+
+        var MOD_ROOT_STATE = SITE_CONST.ROOT_STATE + '.' + MACROSTRATEGY_PTL_CONST.CTX_ROOT;
+
+        $stateProvider.state(MOD_ROOT_STATE, {
+
+            data: {
+
+                pageId: MACROSTRATEGY_PTL_CONST.MOD_ID,
+
+                pageName: MACROSTRATEGY_PTL_CONST.MOD_NAME
+
+            },
+
+            abstract: true,
+
+            url: MACROSTRATEGY_PTL_CONST.CTX_ROOT,
+
+            template: '<ui-view/>',
+
+            resolve: {
+
+                lazyLoad: [ '$ocLazyLoad', function($ocLazyLoad) {
+
+                    return $ocLazyLoad.load(MACROSTRATEGY_PTL_CONST.MOD_ID);
+
+                } ]
+
+            }
+
+        }).state(MOD_ROOT_STATE + '.index', {
+
+            data: {
+
+                viewName: 'Index Page'
+
+            },
+
+            url: '/',
+
+            templateUrl: MACROSTRATEGY_PTL_CONST.MOD_DIR + '/views/index.html',
+
+            controller: 'MacroStrategyPtlController',
+
+            controllerAs: 'macroStrategyPtlCtrl'
+
+        });
+
+    } ]);
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    angular.module('nextGmoApp').constant('DASHBOARD_CONST', {
+
+        CTX_ROOT: 'dashboard',
+
+        MOD_NAME: 'My Dashboard',
+
+        MOD_ID: 'my-dashboard',
+
+        MOD_DIR: 'modules/my-dashboard',
+
+        MOD_DIST_DIR: 'modules/my-dashboard/dist'
+
+    });
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    angular.module('nextGmoApp').config([ '$stateProvider', '$ocLazyLoadProvider', 'SITE_CONST', 'DASHBOARD_CONST', function($stateProvider, $ocLazyLoadProvider, SITE_CONST, DASHBOARD_CONST) {
+
+        $ocLazyLoadProvider.config({
+
+            modules: [ {
+
+                name: DASHBOARD_CONST.MOD_ID,
+
+                files: [ DASHBOARD_CONST.MOD_DIST_DIR + '/' + SITE_CONST.PACK_PREFIX + DASHBOARD_CONST.MOD_ID + '.min.js', DASHBOARD_CONST.MOD_DIST_DIR + '/' + SITE_CONST.PACK_PREFIX + DASHBOARD_CONST.MOD_ID + '.min.css' ]
+
+            } ]
+
+        });
+
+        var MOD_ROOT_STATE = SITE_CONST.ROOT_STATE + '.' + DASHBOARD_CONST.CTX_ROOT;
+
+        $stateProvider.state(MOD_ROOT_STATE, {
+
+            data: {
+
+                pageId: DASHBOARD_CONST.MOD_ID,
+
+                pageName: DASHBOARD_CONST.MOD_NAME
+
+            },
+
+            url: DASHBOARD_CONST.CTX_ROOT,
+
+            abstract: true,
+
+            template: '<ui-view/>',
+
+            resolve: {
+
+                lazyLoad: [ '$ocLazyLoad', function($ocLazyLoad) {
+
+                    return $ocLazyLoad.load(DASHBOARD_CONST.MOD_ID);
+
+                } ]
+
+            }
+
+        }).state(MOD_ROOT_STATE + '.index', {
+
+            data: {
+
+                viewName: 'Index Page'
+
+            },
+
+            url: '/',
+
+            templateUrl: DASHBOARD_CONST.MOD_DIR + '/views/index.html',
+
+            controller: 'DashboardController',
+
+            controllerAs: 'dashboardCtrl'
+
+        });
+
+    } ]);
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    angular.module('nextGmoApp').constant('MY_PROFILE_CONST', {
+
+        APP_NAME: 'My Profile',
+
+        CTX_ROOT: 'my-profile',
+
+        MOD_NAME: 'my-profile',
+
+        MOD_DIR: 'modules/my-profile',
+
+        MOD_DIST_DIR: 'modules/my-profile/dist'
+
+    });
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    angular.module('nextGmoApp').config([ '$stateProvider', '$ocLazyLoadProvider', 'SITE_CONST', 'MY_PROFILE_CONST', function($stateProvider, $ocLazyLoadProvider, SITE_CONST, MY_PROFILE_CONST) {
+
+        $ocLazyLoadProvider.config({
+
+            modules: [ {
+
+                name: MY_PROFILE_CONST.MOD_NAME,
+
+                files: [ MY_PROFILE_CONST.MOD_DIST_DIR + '/' + SITE_CONST.PACK_PREFIX + MY_PROFILE_CONST.MOD_NAME + '.min.js', MY_PROFILE_CONST.MOD_DIST_DIR + '/' + SITE_CONST.PACK_PREFIX + MY_PROFILE_CONST.MOD_NAME + '.min.css' ]
+
+            } ]
+
+        });
+
+        var MOD_ROOT_STATE = SITE_CONST.ROOT_STATE + '.' + MY_PROFILE_CONST.CTX_ROOT;
+
+        $stateProvider.state(MOD_ROOT_STATE, {
+
+            data: {
+
+                appName: MY_PROFILE_CONST.APP_NAME
+
+            },
+
+            abstract: true,
+
+            url: MY_PROFILE_CONST.CTX_ROOT,
+
+            template: '<ui-view/>',
+
+            resolve: {
+
+                lazyLoad: [ '$ocLazyLoad', function($ocLazyLoad) {
+
+                    return $ocLazyLoad.load(MY_PROFILE_CONST.MOD_NAME);
+
+                } ]
+
+            }
+
+        }).state(MOD_ROOT_STATE + '.index', {
+
+            data: {
+
+                pageTitle: 'Index Page'
+
+            },
+
+            url: '/',
+
+            templateUrl: MY_PROFILE_CONST.MOD_DIR + '/views/index.html',
+
+            controller: 'MyProfileController',
+
+            controllerAs: 'myProfileCtrl'
+
+        });
+
+    } ]);
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    angular.module('nextGmoApp').constant('PRICESTATS_PTL_CONST', {
+
+        CTX_ROOT: 'pricestats',
+
+        MOD_NAME: 'Pricestats Portal',
+
+        MOD_ID: 'pricestats_portal',
+
+        MOD_DIR: 'modules/pricestats_portal',
+
+        MOD_DIST_DIR: 'modules/pricestats_portal/dist'
+
+    });
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    angular.module('nextGmoApp').config([ '$stateProvider', '$ocLazyLoadProvider', 'SITE_CONST', 'PRICESTATS_PTL_CONST', function($stateProvider, $ocLazyLoadProvider, SITE_CONST, PRICESTATS_PTL_CONST) {
+
+        $ocLazyLoadProvider.config({
+
+            modules: [ {
+
+                name: PRICESTATS_PTL_CONST.MOD_ID,
+
+                files: [ PRICESTATS_PTL_CONST.MOD_DIST_DIR + '/' + SITE_CONST.PACK_PREFIX + PRICESTATS_PTL_CONST.MOD_ID + '.min.js', PRICESTATS_PTL_CONST.MOD_DIST_DIR + '/' + SITE_CONST.PACK_PREFIX + PRICESTATS_PTL_CONST.MOD_ID + '.min.css' ]
+
+            } ]
+
+        });
+
+        var MOD_ROOT_STATE = SITE_CONST.ROOT_STATE + '.' + PRICESTATS_PTL_CONST.CTX_ROOT;
+
+        $stateProvider.state(MOD_ROOT_STATE, {
+
+            data: {
+
+                pageId: PRICESTATS_PTL_CONST.MOD_ID,
+
+                pageName: PRICESTATS_PTL_CONST.MOD_NAME
+
+            },
+
+            abstract: true,
+
+            url: PRICESTATS_PTL_CONST.CTX_ROOT,
+
+            template: '<ui-view/>',
+
+            resolve: {
+
+                lazyLoad: [ '$ocLazyLoad', function($ocLazyLoad) {
+
+                    return $ocLazyLoad.load(PRICESTATS_PTL_CONST.MOD_ID);
+
+                } ]
+
+            }
+
+        }).state(MOD_ROOT_STATE + '.index', {
+
+            data: {
+
+                viewName: 'Index Page'
+
+            },
+
+            url: '/',
+
+            templateUrl: PRICESTATS_PTL_CONST.MOD_DIR + '/views/index.html',
+
+            controller: 'PriceStatsPtlController',
+
+            controllerAs: 'pricestatsPtlCtrl'
+
+        });
+
+    } ]);
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    angular.module('nextGmoApp').constant('RR_PTL_CONST', {
+
+        CTX_ROOT: 'research-retreat',
+
+        MOD_NAME: 'Research Retreat Portal',
+
+        MOD_ID: 'research-retreat_portal',
+
+        MOD_DIR: 'modules/research-retreat_portal',
+
+        MOD_DIST_DIR: 'modules/research-retreat_portal/dist'
+
+    });
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    angular.module('nextGmoApp').config([ '$stateProvider', '$ocLazyLoadProvider', 'SITE_CONST', 'RR_PTL_CONST', function($stateProvider, $ocLazyLoadProvider, SITE_CONST, RR_PTL_CONST) {
+
+        $ocLazyLoadProvider.config({
+
+            modules: [ {
+
+                name: RR_PTL_CONST.MOD_ID,
+
+                files: [ RR_PTL_CONST.MOD_DIST_DIR + '/' + SITE_CONST.PACK_PREFIX + RR_PTL_CONST.MOD_ID + '.min.js', RR_PTL_CONST.MOD_DIST_DIR + '/' + SITE_CONST.PACK_PREFIX + RR_PTL_CONST.MOD_ID + '.min.css' ]
+
+            } ]
+
+        });
+
+        var MOD_ROOT_STATE = SITE_CONST.ROOT_STATE + '.' + RR_PTL_CONST.CTX_ROOT;
+
+        $stateProvider.state(MOD_ROOT_STATE, {
+
+            data: {
+
+                pageId: RR_PTL_CONST.MOD_ID,
+
+                pageName: RR_PTL_CONST.MOD_NAME
+
+            },
+
+            abstract: true,
+
+            url: RR_PTL_CONST.CTX_ROOT,
+
+            template: '<ui-view/>',
+
+            resolve: {
+
+                lazyLoad: [ '$ocLazyLoad', function($ocLazyLoad) {
+
+                    return $ocLazyLoad.load(RR_PTL_CONST.MOD_ID);
+
+                } ]
+
+            }
+
+        }).state(MOD_ROOT_STATE + '.index', {
+
+            data: {
+
+                viewName: 'Index Page'
+
+            },
+
+            url: '/',
+
+            templateUrl: RR_PTL_CONST.MOD_DIR + '/views/index.html',
+
+            controller: 'ResearchRetreatPtlController',
+
+            controllerAs: 'researchRetreatPtlCtrl'
+
+        });
+
+    } ]);
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    angular.module('nextGmoApp').constant('RISK_PTL_CONST', {
+
+        CTX_ROOT: 'risk',
+
+        MOD_NAME: 'Risk Portal',
+
+        MOD_ID: 'risk_portal',
+
+        MOD_DIR: 'modules/risk_portal',
+
+        MOD_DIST_DIR: 'modules/risk_portal/dist'
+
+    });
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    angular.module('nextGmoApp').config([ '$stateProvider', '$ocLazyLoadProvider', 'SITE_CONST', 'RISK_PTL_CONST', function($stateProvider, $ocLazyLoadProvider, SITE_CONST, RISK_PTL_CONST) {
+
+        $ocLazyLoadProvider.config({
+
+            modules: [ {
+
+                name: RISK_PTL_CONST.MOD_ID,
+
+                files: [ RISK_PTL_CONST.MOD_DIST_DIR + '/' + SITE_CONST.PACK_PREFIX + RISK_PTL_CONST.MOD_ID + '.min.js', RISK_PTL_CONST.MOD_DIST_DIR + '/' + SITE_CONST.PACK_PREFIX + RISK_PTL_CONST.MOD_ID + '.min.css' ]
+
+            } ]
+
+        });
+
+        var MOD_ROOT_STATE = SITE_CONST.ROOT_STATE + '.' + RISK_PTL_CONST.CTX_ROOT;
+
+        $stateProvider.state(MOD_ROOT_STATE, {
+
+            data: {
+
+                pageId: RISK_PTL_CONST.MOD_ID,
+
+                pageName: RISK_PTL_CONST.MOD_NAME
+
+            },
+
+            abstract: true,
+
+            url: RISK_PTL_CONST.CTX_ROOT,
+
+            template: '<ui-view/>',
+
+            resolve: {
+
+                lazyLoad: [ '$ocLazyLoad', function($ocLazyLoad) {
+
+                    return $ocLazyLoad.load(RISK_PTL_CONST.MOD_ID);
+
+                } ]
+
+            }
+
+        }).state(MOD_ROOT_STATE + '.index', {
+
+            data: {
+
+                viewName: 'Index Page'
+
+            },
+
+            url: '/',
+
+            templateUrl: RISK_PTL_CONST.MOD_DIR + '/views/index.html',
+
+            controller: 'RiskPtlController',
+
+            controllerAs: 'riskPtlCtrl'
+
+        });
+
+    } ]);
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    angular.module('nextGmoApp').constant('SITE_CONST', {
+
+        NAME: 'State Street Global Markets',
+
+        ROOT_STATE: 'site',
+
+        PACK_PREFIX: 'ssa-ngmo.'
+
+    });
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    function GlobalController($scope, $log, globalService, $timeout) {
+
+        var vm = this;
+
+        vm.model = globalService.model;
+
+        function initSemanticComponent() {
+
+            $('.history.example .menu .item').tab({
+
+                context: '.history.example',
+
+                history: true
+
+            });
+
+        }
+
+        (function init() {
+
+            $log.debug('[GlobalController] init()...');
+
+            initSemanticComponent();
+
+        })();
+
+    }
+
+    GlobalController.$inject = [ '$scope', '$log', 'globalService', '$timeout' ];
+
+    angular.module('nextGmoApp').controller('GlobalController', GlobalController);
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    function SiteBreadcrumbController($scope, $log, gmoStateService) {
+
+        var vm = this;
+
+        vm.model = {
+
+            currentState: gmoStateService.currentState
+
+        };
+
+        vm.isSiteHomeState = function() {
+
+            return gmoStateService.isSiteHomeState;
+
+        };
+
+        vm.isModuleIndexState = function() {
+
+            return gmoStateService.isModuleIndexState;
+
+        };
+
+        vm.getCurrentModuleIndexState = function() {
+
+            return gmoStateService.currentModuleIndexState;
+
+        };
+
+        (function init() {
+
+            $log.debug('[SiteBreadcrumbController] init()...');
+
+            $scope.$watch(function() {
+
+                return gmoStateService.currentState;
+
+            }, function(newValue, oldValue) {
+
+                if (newValue.name !== oldValue.name) {
+
+                    $log.debug('[SiteBreadcrumbController] state change detected, new state is: ' + newValue.name);
+
+                    vm.model.currentState = newValue;
+
+                }
+
+            });
+
+        })();
+
+    }
+
+    SiteBreadcrumbController.$inject = [ '$scope', '$log', 'gmoStateService' ];
+
+    angular.module('nextGmoApp').controller('SiteBreadcrumbController', SiteBreadcrumbController);
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    function SiteFooterController($log) {
+
+        var vm = this;
+
+        vm.showLegalDisclosure = function(event) {
+
+            $log.debug('[SiteFooterController] showLegalDisclosure()...');
+
+        };
+
+        (function init() {
+
+            $log.debug('[SiteFooterController] init()...');
+
+        })();
+
+    }
+
+    SiteFooterController.$inject = [ '$log' ];
+
+    angular.module('nextGmoApp').controller('SiteFooterController', SiteFooterController);
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    function SiteHeaderController($log) {
+
+        var vm = this;
+
+        (function init() {
+
+            $log.debug('[SiteHeaderController] init()...');
+
+            angular.element('.ui.dropdown').dropdown();
+
+        })();
+
+    }
+
+    SiteHeaderController.$inject = [ '$log' ];
+
+    angular.module('nextGmoApp').controller('SiteHeaderController', SiteHeaderController);
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    angular.module('nextGmoApp.directives').directive('popMessageModal', function() {
+
+        return {
+
+            restrict: 'E',
+
+            templateUrl: 'views/components/site_popup.html'
+
+        };
+
+    });
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    angular.module('nextGmoApp.widgets').directive('articles', [ 'gmoHttpService', '$rootScope', function(gmoHttpService, $rootScope) {
+
+        return {
+
+            restrict: 'E',
+
+            scope: {
+
+                options: '='
+
+            },
+
+            transclude: true,
+
+            templateUrl: 'views/widgets/articles.html',
+
+            link: function(scope) {
+
+                scope.toggleDocOrAbstract = 'VIEW DOCUMENT';
+
+                function getAuthorByName(name, array) {
+
+                    var length = array.length;
+
+                    for (var i = 0; i < length; i++) {
+
+                        if (array[i].title === name) {
+
+                            return array[i];
+
+                        }
+
+                    }
+
+                }
+
+                function formatAuthor(articleList) {
+
+                    var length = articleList.length;
+
+                    for (var i = 0; i < length; i++) {
+
+                        articleList[i].toggleDocOrAbstract = 'VIEW DOCUMENT';
+
+                        articleList[i].pdf.id = '/research/service/getResource?id=' + articleList[i].pdf.id;
+
+                        var authors = articleList[i].authors, size = authors.length;
+
+                        for (var j = 0; j < size; j++) {
+
+                            var authorObj = getAuthorByName(authors[j], scope.options.allAuthors);
+
+                            authors[j] = !!authorObj ? authorObj : {
+
+                                title: authors[j]
+
+                            };
+
+                        }
+
+                    }
+
+                }
+
+                function formatArticleList() {
+
+                    if (!!scope.options.allAuthors) {
+
+                        formatAuthor(scope.options.articleList);
+
+                    } else {
+
+                        var urlKey = 'getAuthors', url = $rootScope.getUrl.getValue(urlKey).url;
+
+                        gmoHttpService.httpGet(url).then(function(data) {
+
+                            if (!!data && data.data.length !== 0) {
+
+                                scope.options.allAuthors = data.data;
+
+                                formatAuthor(scope.options.articleList);
+
+                            }
+
+                        });
+
+                    }
+
+                }
+
+                scope.toggleDocumentAndAbstract = function($index) {
+
+                    var article = scope.options.articleList[$index];
+
+                    article.isViewed = true;
+
+                    var options = {
+
+                        height: '500px'
+
+                    };
+
+                    var container = '#pdfContent' + $index;
+
+                    if (article.toggleDocOrAbstract !== 'VIEW DOCUMENT') {
+
+                        article.toggleDocOrAbstract = 'VIEW DOCUMENT';
+
+                    } else {
+
+                        article.toggleDocOrAbstract = 'SHOW ABSTRACT';
+
+                    }
+
+                };
+
+                scope.agreedArticle = function(article, $index) {
+
+                    var data = {
+
+                        id: article.id
+
+                    }, appendUrl = '', url = '', urlKey = 'agreeArticleOrNot';
+
+                    if (article.isAgreed) {
+
+                        appendUrl = 'disagreeArticle';
+
+                    } else {
+
+                        appendUrl = 'agreeArticle';
+
+                    }
+
+                    url = $rootScope.getUrl.getValue(urlKey).url + '/' + appendUrl;
+
+                    gmoHttpService.httpPost(url, data).then(function(data) {
+
+                        if (data.success) {
+
+                            if (article.isAgreed) {
+
+                                scope.options.articleList[$index].agreedSize = scope.options.articleList[$index].agreedSize - 1;
+
+                            } else {
+
+                                scope.options.articleList[$index].agreedSize = scope.options.articleList[$index].agreedSize + 1;
+
+                            }
+
+                            scope.options.articleList[$index].isAgreed = !article.isAgreed;
+
+                        } else {
+
+                            window.alert('Internal error, Please try again.');
+
+                        }
+
+                    });
+
+                };
+
+                scope.searchBy = function(type, name) {};
+
+                (function() {
+
+                    formatArticleList();
+
+                    scope.$watch(function() {
+
+                        return scope.options.articleList;
+
+                    }, function(newVal, oldVal) {
+
+                        if (newVal !== oldVal) {
+
+                            formatArticleList();
+
+                        }
+
+                    });
+
+                })();
+
+            }
+
+        };
+
+    } ]);
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    angular.module('nextGmoApp.widgets').directive('chartsOfWeek', [ 'globalService', '$timeout', function(globalService, $timeout) {
+
+        return {
+
+            restrict: 'E',
+
+            scope: {
+
+                article: '=',
+
+                title: '='
+
+            },
+
+            transclude: true,
+
+            templateUrl: 'views/widgets/charts_of_week.html',
+
+            link: function(scope) {
+
+                var $swiperContainer = angular.element('.swiper-container');
+
+                var param = '';
+
+                var mySwiper;
+
+                function initSwiper() {
+
+                    var Swiper = window.Swiper;
+
+                    mySwiper = new Swiper('.js-chartsofweek-swiper', {
+
+                        loop: true,
+
+                        pagination: '.js-swiper-pagination',
+
+                        paginationClickable: true,
+
+                        nextButton: '.js-swiper-next',
+
+                        prevButton: '.js-swiper-prev',
+
+                        autoplay: 4e3,
+
+                        autoplayDisableOnInteraction: false
+
+                    });
+
+                }
+
+                if (!!scope.article) {
+
+                    $timeout(function() {
+
+                        initSwiper();
+
+                    }, 0);
+
+                } else {
+
+                    globalService.httpGet('getArticlesBy', param).then(function(data) {
+
+                        if (!!data && data.articles.length !== 0) {
+
+                            scope.article = data.articles[0];
+
+                            $timeout(function() {
+
+                                scope.$apply(function() {
+
+                                    initSwiper();
+
+                                });
+
+                            }, 0);
+
+                        }
+
+                    });
+
+                }
+
+                angular.element('.download.link').popup();
+
+                scope.$watch(function() {
+
+                    return scope.article;
+
+                }, function(newVal, oldVal) {
+
+                    if (oldVal && newVal !== oldVal) {
+
+                        if (newVal.images.length > 1) {
+
+                            if (!!mySwiper) {
+
+                                mySwiper.destroy(true, true);
+
+                            }
+
+                            initSwiper();
+
+                        }
+
+                    }
+
+                });
+
+            }
+
+        };
+
+    } ]);
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    function gmoApiHubService() {}
+
+    gmoApiHubService.$inject = [];
+
+    angular.module('nextGmoApp.services').factory('gmoApiHubService', gmoApiHubService);
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    function globalService($http, $q, $log, $window) {
+
+        function echo() {
+
+            $log.debug('GlobalService.echo()...');
+
+        }
+
+        function parseAjaxErrorCode(status) {
+
+            if (!!status) {
+
+                if (status === 404) {
+
+                    $window.location.href = './404.html';
+
+                } else if (status === 403) {
+
+                    $window.location.href = './403.html';
+
+                } else if (status === 500) {
+
+                    $window.location.href = './500.html';
+
+                } else {}
+
+            }
+
+        }
+
+        function httpGet(url, params) {
+
+            var dfd = $q.defer();
+
+            var config = {
+
+                method: 'GET',
+
+                url: url,
+
+                params: params,
+
+                cache: false
+
+            };
+
+            $http(config).success(function(data, status) {
+
+                dfd.resolve(data);
+
+            }).error(function(data, status) {
+
+                dfd.reject('Error occurred when accessing ' + url);
+
+                if (!!status) {
+
+                    parseAjaxErrorCode(status);
+
+                }
+
+            });
+
+            return dfd.promise;
+
+        }
+
+        var that = {
+
+            echo: echo,
+
+            httpGet: httpGet
+
+        };
+
+        return that;
+
+    }
+
+    globalService.$inject = [ '$http', '$q', '$log', '$window' ];
+
+    angular.module('nextGmoApp.services').factory('globalService', globalService);
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    function gmoHttpService($http, $q) {
+
+        function httpGet(url, params, headers) {
+
+            var dfd = $q.defer();
+
+            var config = {
+
+                url: url,
+
+                params: params,
+
+                headers: headers
+
+            };
+
+            $http.get(url, config).then(function successCallback(response) {
+
+                dfd.resolve(response.data);
+
+            }, function errorCallback(response) {
+
+                dfd.reject('Error occurred when accessing ' + url);
+
+            });
+
+            return dfd.promise;
+
+        }
+
+        function httpPost(url, data, params, headers) {
+
+            var dfd = $q.defer();
+
+            var config = {
+
+                params: params,
+
+                headers: headers
+
+            };
+
+            $http.post(url, data, config).then(function successCallback(response) {
+
+                dfd.resolve(response.data);
+
+            }, function errorCallback(response) {
+
+                dfd.reject('Error occurred when accessing ' + url);
+
+            });
+
+            return dfd.promise;
+
+        }
+
+        var that = {
+
+            httpGet: httpGet,
+
+            httpPost: httpPost
+
+        };
+
+        return that;
+
+    }
+
+    gmoHttpService.$inject = [ '$http', '$q' ];
+
+    angular.module('nextGmoApp.services').factory('gmoHttpService', gmoHttpService);
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    function gmoHttpInterceptor($log, $q) {
+
+        var that = {};
+
+        that.response = function(response) {
+
+            return response;
+
+        };
+
+        that.responseError = function(response) {
+
+            var statusCode = response.status;
+
+            if (!!statusCode) {
+
+                switch (statusCode) {
+
+                  case 403:
+
+                    break;
+
+
+
+                  case 404:
+
+                    break;
+
+
+
+                  case 500:
+
+                    break;
+
+
+
+                  default:                }
+
+            }
+
+            return $q.reject(response);
+
+        };
+
+        return that;
+
+    }
+
+    gmoHttpInterceptor.$inject = [ '$log', '$q' ];
+
+    angular.module('nextGmoApp').factory('gmoHttpInterceptor', gmoHttpInterceptor);
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    function gmoSessionService($log, $window, $location, $timeout, gmoHttpService) {
+
+        var MAX_IDLE_TIMEOUT = 5 * 60 * 1e3;
+
+        var that = {
+
+            model: {
+
+                idleSessionTimer: null
+
+            }
+
+        };
+
+        function warnIdleSession() {
+
+            $log.debug('[gmoSessionService] warnIdleSession()...');
+
+            window.alert('Your session is about to expire...');
+
+        }
+
+        function awakeIdleSession() {
+
+            var serviceUrl = '';
+
+            gmoHttpService.httpGet(serviceUrl).then(function(data) {
+
+                that.startIdleSessionTimer();
+
+            });
+
+        }
+
+        that.hasSessionTimedOut = function(httpResponse, dataType) {
+
+            var grep = dataType === 'html' ? '<!-- SiteMinder Encoding=UTF-8; -->' : '<html>';
+
+            if (httpResponse.toLowerCase().indexOf(grep.toLowerCase()) >= 0) {
+
+                that.logout();
+
+            }
+
+        };
+
+        that.logout = function() {
+
+            var cachebreaker = new Date().getTime();
+
+            var redirectUrl = $location.protocol() + '//' + $location.host() + ':' + $location.port() + '/logout.html?_=' + cachebreaker + '&target=' + $location.path();
+
+            $window.location.replace(redirectUrl);
+
+        };
+
+        that.startIdleSessionTimer = function() {
+
+            $log.debug('[gmoSessionService] startIdleSessionTimer()...');
+
+            if (that.model.idleSessionTimer) {
+
+                $timeout.cancel(that.model.idleSessionTimer);
+
+            }
+
+            that.model.idleSessionTimer = $timeout(warnIdleSession, MAX_IDLE_TIMEOUT);
+
+        };
+
+        return that;
+
+    }
+
+    gmoSessionService.$inject = [ '$log', '$window', '$location', '$timeout', 'gmoHttpService' ];
+
+    angular.module('nextGmoApp.services').factory('gmoSessionService', gmoSessionService);
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    function gmoStateService($log, _, $state) {
+
+        var INDEX_STATE_SUFFIX = '.index';
+
+        var that = {
+
+            currentState: null,
+
+            isSiteHomeState: true,
+
+            isModuleIndexState: false,
+
+            currentModuleIndexState: null
+
+        };
+
+        function isSiteHomeState(stateName) {
+
+            if (stateName) {
+
+                return _(stateName).startsWith('site.home');
+
+            }
+
+        }
+
+        function isModuleIndexState(stateName) {
+
+            if (stateName) {
+
+                return _(stateName).endsWith(INDEX_STATE_SUFFIX);
+
+            }
+
+        }
+
+        function getModuleIndexState(stateName) {
+
+            if (stateName) {
+
+                if (that.isModuleIndexState) {
+
+                    return stateName;
+
+                } else {
+
+                    var lastIndex = stateName.lastIndexOf('.');
+
+                    var indexState = stateName.substring(0, lastIndex) + INDEX_STATE_SUFFIX;
+
+                    return indexState;
+
+                }
+
+            }
+
+        }
+
+        that.setCurrentState = function(toState) {
+
+            $log.debug('[gmoStateService] set current state to: ' + toState.name);
+
+            that.currentState = toState;
+
+            that.isSiteHomeState = isSiteHomeState(that.currentState.name);
+
+            that.isModuleIndexState = isModuleIndexState(that.currentState.name);
+
+            that.currentModuleIndexState = getModuleIndexState(that.currentState.name);
+
+        };
+
+        that.gotoState = function(stateName, params, options) {
+
+            $state.go(stateName, params, options);
+
+        };
+
+        return that;
+
+    }
+
+    gmoStateService.$inject = [ '$log', '_', '$state' ];
+
+    angular.module('nextGmoApp.services').factory('gmoStateService', gmoStateService);
+
+})();
+
+
+
+(function() {
+
+    'use strict';
+
+    function gmoTrackingService($log, gmoHttpService) {
+
+        var that = {};
+
+        that.trackPageView = function(pageUrl) {
+
+            $log.debug('[gmoTrackingService] trackPageView()...');
+
+            var serviceUrl = '';
+
+            var params = {
+
+                pageUrl: pageUrl
+
+            };
+
+            gmoHttpService.httpGet(serviceUrl, params).then(function(data) {
+
+                $log.debug('[gmoTrackingService] page view tracked, pageUrl: ' + pageUrl);
+
+            });
+
+        };
+
+        return that;
+
+    }
+
+    gmoTrackingService.$inject = [ '$log', 'gmoHttpService' ];
+
+    angular.module('nextGmoApp.services').factory('gmoTrackingService', gmoTrackingService);
+
+})();
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div ui-view="site_header"></div>
+
+
+
+<div class="ui container">
+
+    <div ui-view="site_breadcrumb"></div>
+
+
+
+    <div ui-view="mod_deck" class="site-mod-deck"></div>
+
+</div>
+
+
+
+<!--site footer-->
+
+<div ui-view="site_footer"></div>
+
+
+
+'use strict';
+
+
+
+module.exports = function (grunt) {
+
+
+
+    require('load-grunt-tasks')(grunt);
+
+    require('time-grunt')(grunt);
+
+
+
+
+
+    ////////////////////////////////////////////////////////////////////////
+
+
+
+    // parse module list from `--build-mods` option
+
+    var mods_to_build = (function () {
+
+        var option_build_mods = grunt.option('build-mods');
+
+        var mod_list = option_build_mods ? option_build_mods.split(',') : [];
+
+        grunt.log.writeln('mod_list: ' + mod_list);
+
+
+
+        return mod_list;
+
+    })();
+
+
+
+    // whether build all modules or not, true if no individual module was specified in `--build-mods` option, false otherwise
+
+    var build_all_mods = !mods_to_build.length;
+
+
+
+
+
+    // Configurable paths for the application
+
+    var appConfig = {
+
+        src: 'app',
+
+        dev_dist: 'build',
+
+        prod_dist: '../WebContent/',
+
+        pkg: require('./package.json').name,    // `ssa-ngmo`
+
+        version: require('./package.json').version
+
+    };
+
+
+
+    var coreConfig = {
+
+        src: appConfig.src,
+
+        state_mgr: ['scripts/app.js'],
+
+        js_files: [
+
+            'app/scripts/*.js',
+
+            '!app/scripts/app.module.js',
+
+            '!app/scripts/app.constants.js',
+
+            '!app/scripts/app.js',
+
+            'app/scripts/{services,controllers,directives}/*.js'
+
+        ],
+
+        less_files: ['app/styles/index.less'],
+
+        css_files: ['app/.tmp/*.css']
+
+    };
+
+
+
+    var modConfig = {
+
+        root: appConfig.src + '/modules',
+
+        state_mgr: ['scripts/*.app.js'],
+
+        js_files: ['scripts/services/*.service.js', 'scripts/controllers/*.controller.js'],
+
+        less_files: ['styles/index.less'],
+
+        css_files: ['.tmp/*.css'],
+
+        sync_src: (function () {
+
+
+
+            var pattern = [];
+
+
+
+            if (build_all_mods) {
+
+                pattern = ['**/assets/**', '**/dist/*.min.{js,css}', '**/views/**'];
+
+            }
+
+            else {
+
+                pattern = [];
+
+
+
+                for (var i = 0, length = mods_to_build.length; i < length; i++) {
+
+                    pattern.push(mods_to_build[i] + '/{assets,dist,views}/**');
+
+                }
+
+            }
+
+
+
+            grunt.log.writeln('sync:dev module pattern: ' + pattern);
+
+            return pattern;
+
+        })()
+
+    };
+
+
+
+    var serverConfig = {
+
+        port: 8088,
+
+        base: './'
+
+    };
+
+
+
+    /**
+
+     * Get globbing pattern for dyna-* tasks
+
+     */
+
+    var dynaTaskModulePattern = (function () {
+
+
+
+        var pattern = null;
+
+
+
+        if (build_all_mods) {
+
+            pattern = modConfig.root + '/*'
+
+        }
+
+        else {
+
+            pattern = [];
+
+
+
+            for (var i = 0, length = mods_to_build.length; i < length; i++) {
+
+                pattern.push(modConfig.root + '/' + mods_to_build[i]);
+
+            }
+
+        }
+
+
+
+        grunt.log.writeln('module pattern: ' + pattern);
+
+        return pattern;
+
+    })();
+
+
+
+    ////////////////////////////////////////////////////////////////////////
+
+
+
+    var options = {
+
+        app: appConfig,
+
+        core: coreConfig,
+
+        modules: modConfig,
+
+        server: serverConfig
+
+    };
+
+
+
+    var configs = require('load-grunt-configs')(grunt, options);
+
+
+
+    grunt.initConfig(configs);
+
+
+
+
+
+    ////////////////////////////////////////////////////////////////////////
+
+
+
+    grunt.registerTask("dyna-less", "Compile LESS module by module", function () {
+
+
+
+        grunt.log.writeln('Starting ' + this.name + '...');
+
+
+
+        // get the current concat task
+
+        var less = grunt.config.get('less');
+
+
+
+        // update the task dynamically
+
+        grunt.file.expand(dynaTaskModulePattern).forEach(function (mod_dir) {
+
+
+
+            var mod_name = mod_dir.slice(mod_dir.lastIndexOf('/') + 1);
+
+
+
+            // set the config for each module ($mod_name)
+
+            var src = mod_dir + '/styles/index.less';
+
+            var dest = mod_dir + '/.tmp/' + appConfig.pkg + '.' + mod_name + '.concat.css';
+
+
+
+            less.all.files[dest] = src;
+
+        });
+
+
+
+        // save the updates to grunt config
+
+        grunt.config.set('less', less);
+
+
+
+        // run the updated task
+
+        grunt.task.run('less');
+
+    });
+
+
+
+    grunt.registerTask("dyna-concat", "Concatenate JS module by module", function () {
+
+
+
+        grunt.log.writeln('Starting ' + this.name + '...');
+
+
+
+        // get the current concat task
+
+        var concat = grunt.config.get('concat');
+
+
+
+        // update the task dynamically
+
+        grunt.file.expand(dynaTaskModulePattern).forEach(function (mod_dir) {
+
+
+
+            var mod_name = mod_dir.slice(mod_dir.lastIndexOf('/') + 1);
+
+
+
+            var mod_state_const = mod_dir + '/scripts/app.constant.js';
+
+            var mod_state_mgr = mod_dir + '/scripts/app.js';
+
+
+
+            concat.state_mgr.src.push(mod_state_const);
+
+            concat.state_mgr.src.push(mod_state_mgr);
+
+
+
+            var js_files = modConfig.js_files;
+
+            var src_js = [];
+
+
+
+            js_files.forEach(function (file) {
+
+                file = mod_dir + '/' + file;
+
+                src_js.push(file);
+
+                grunt.log.writeln('[' + mod_name + '] js file path: ' + file);
+
+            });
+
+
+
+            // set the config for each module ($mod_name)
+
+            concat[mod_name + '_js'] = {
+
+                src: src_js,
+
+                dest: mod_dir + '/.tmp/' + appConfig.pkg + '.' + mod_name + '.concat.js'
+
+            };
+
+
+
+            grunt.log.writeln(concat[mod_name + '_js'].dest);
+
+        });
+
+
+
+        // save the updates to grunt config
+
+        grunt.config.set('concat', concat);
+
+
+
+        // run the updated task
+
+        grunt.task.run('concat');
+
+    });
+
+
+
+    grunt.registerTask("dyna-cssmin", "Minimize CSS module by module", function () {
+
+
+
+        grunt.log.writeln('Starting ' + this.name + '...');
+
+
+
+        // get the current cssmin task
+
+        var cssmin = grunt.config.get('cssmin');
+
+
+
+        // update the task dynamically
+
+        grunt.file.expand(dynaTaskModulePattern).forEach(function (mod_dir) {
+
+
+
+            var mod_name = mod_dir.slice(mod_dir.lastIndexOf('/') + 1);
+
+
+
+            var src = mod_dir + '/.tmp/' + appConfig.pkg + '.' + mod_name + '.concat.css';
+
+            var dest = mod_dir + '/dist/' + appConfig.pkg + '.' + mod_name + '.min.css';
+
+
+
+            cssmin.all.files[dest] = src;
+
+        });
+
+
+
+        // save the updates to grunt config
+
+        grunt.config.set('cssmin', cssmin);
+
+
+
+        // run the updated task
+
+        grunt.task.run('cssmin');
+
+    });
+
+
+
+    grunt.registerTask("dyna-uglify", "Minimize JS module by module", function (env) {
+
+
+
+        grunt.log.writeln('Starting ' + this.name + '...');
+
+
+
+        if (env !== 'dev' && env !== 'prod') {
+
+            grunt.fatal('env must be either `dev` or `prod`');
+
+        }
+
+
+
+        // get the current uglify task
+
+        var uglify = grunt.config.get('uglify');
+
+
+
+        // update the task dynamically
+
+        grunt.file.expand(dynaTaskModulePattern).forEach(function (mod_dir) {
+
+
+
+            var mod_name = mod_dir.slice(mod_dir.lastIndexOf('/') + 1);
+
+
+
+            var src = mod_dir + '/.tmp/' + appConfig.pkg + '.' + mod_name + '.concat.js';
+
+            var dest = mod_dir + '/dist/' + appConfig.pkg + '.' + mod_name + '.min.js';
+
+
+
+            uglify[env].files[dest] = src;
+
+        });
+
+
+
+        // save the updates to grunt config
+
+        grunt.config.set('uglify', uglify);
+
+
+
+        // run the updated task
+
+        grunt.task.run('uglify:' + env);
+
+    });
+
+
+
+
+
+    ////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+    // grunt.registerTask('build', ['clean', 'jshint', 'bower_concat', 'dyna-less', 'dyna-concat', 'dyna-cssmin']);
+
+    // grunt.registerTask('default', ['build', 'dyna-uglify-dev', 'processhtml', 'copy:vendor', 'sync:dev', 'cachebreaker:dev', 'connect', 'watch']);
+
+    // grunt.registerTask('release', ['build', 'bower_concat', 'dyna-uglify', 'copy:vendor', 'sync:dev', 'cachebreaker:prod', 'sync:prod']);
+
+
+
+    grunt.registerTask('build', ['clean', 'jshint', 'dyna-less', 'dyna-concat']);
+
+
+
+    // dev build task
+
+    grunt.registerTask('default', ['build', 'dyna-cssmin', 'dyna-uglify:dev', 'processhtml', 'copy:vendor', 'sync:dev', 'cachebreaker:dev', 'connect', 'watch']);
+
+
+
+    // prod build task
+
+    grunt.registerTask('release', ['build', 'bower_concat', 'dyna-cssmin', 'dyna-uglify:prod', 'processhtml', 'copy:vendor', 'sync:dev', 'cachebreaker:prod']);
+
+};
+/**
+
+ * Created by e524935 on 11/6/2016.
+
+ */
+
+
+
+'use strict';
+
+
+
+module.exports.tasks = {
+
+
+
+    clean: {
+
+        build: ['<%= core.src %>/.tmp/*', '<%= app.src %>/**/dist/*', '<%= app.src %>/**/.tmp/*', '<%= app.dev_dist %>/*']
+
+    },
+
+
+
+    less: {
+
+        all: {
+
+            options: {
+
+                // compress output using clean-css (a CSS minifier)
+
+                cleancss: false,
+
+                compress: false
+
+            },
+
+            files: {
+
+                '<%= core.src %>/.tmp/index.css': '<%= core.src %>/styles/index.less'
+
+            }
+
+        }
+
+    },
+
+
+
+    jshint: {
+
+        options: {
+
+            jshintrc: '.jshintrc',
+
+            reporter: require('jshint-stylish')
+
+        },
+
+        all: {
+
+            src: [
+
+                //'Gruntfile.js',
+
+                '<%= core.src %>/scripts/**/*.js',
+
+                '<%= modules.root %>/**/scripts/**.js'
+
+            ]
+
+        }
+
+    },
+
+
+
+    bower_concat: {
+
+        main: {
+
+            options: {
+
+                separator: ';\n'
+
+            },
+
+            dest: {
+
+                js: '<%= core.src %>/.tmp/bower.concat.js',
+
+                css: '<%= core.src %>/.tmp/bower.concat.css'
+
+            },
+
+            bowerOptions: {
+
+                relative: false
+
+            },
+
+            dependencies: {
+
+                'angular': 'jquery',
+
+                'semantic': 'ssa-daterangepicker'
+
+            },
+
+            mainFiles: {
+
+                'font-awesome': ['css/font-awesome.css'],
+
+                'semantic': ['dist/semantic.css', 'dist/semantic.js']
+
+            }
+
+        }
+
+    },
+
+
+
+    concat: {
+
+        init_js: {
+
+            // update the src dynamically via dyna-concat-state-mgr task
+
+            src: ['<%= core.src %>/scripts/app.module.js', '<%= core.src %>/scripts/app.constant.js'],
+
+            dest: '<%= core.src %>/.tmp/app.init.js'
+
+        },
+
+        state_mgr: {
+
+            // update the src dynamically via dyna-concat-state-mgr task
+
+            src: ['<%= core.src %>/scripts/app.js'],
+
+            dest: '<%= core.src %>/.tmp/app.statemgr.js'
+
+        },
+
+        core_js: {
+
+            src: '<%= core.js_files %>',
+
+            dest: '<%= core.src %>/.tmp/app.concat.js'
+
+        },
+
+        core_css: {
+
+            src: '<%= core.css_files %>',
+
+            dest: '<%= core.src %>/.tmp/app.concat.css'
+
+        }
+
+        // set {$module}_js and {$module}_css dynamically via dyna-concat task
+
+    },
+
+
+
+    uglify: {
+
+        dev: {
+
+            options: {
+
+                report: false,
+
+                mangle: false,
+
+                compress: false,    // turn off compression for local development
+
+                sourceMap: false,
+
+                beautify: true,
+
+                quoteStyle: 3
+
+            },
+
+            files: {
+
+                // '<%= core.src %>/dist/<%= app.pkg %>.vendor.min.js': ['<%= core.src %>/.tmp/bower.concat.js'],
+
+                '<%= core.src %>/dist/<%= app.pkg %>.min.js': ['<%= core.src %>/.tmp/app.init.js', '<%= core.src %>/.tmp/app.statemgr.js', '<%= core.src %>/.tmp/app.concat.js']
+
+
+
+                // set dest/src JS module by module dynamically via dyna-uglify task
+
+            }
+
+        },
+
+        prod: {
+
+            options: {
+
+                maxLineLen: 5000,
+
+                sourceMap: false,
+
+                quoteStyle: 3
+
+            },
+
+            files: {
+
+                '<%= core.src %>/dist/<%= app.pkg %>.vendor.min.js': ['<%= core.src %>/.tmp/bower.concat.js'],
+
+                '<%= core.src %>/dist/<%= app.pkg %>.min.js': ['<%= core.src %>/.tmp/app.init.js', '<%= core.src %>/.tmp/app.statemgr.js', '<%= core.src %>/.tmp/app.concat.js']
+
+
+
+                // set dest/src JS module by module dynamically via dyna-uglify task
+
+            }
+
+        }
+
+    },
+
+
+
+    cssmin: {
+
+        all: {
+
+            options: {
+
+                processImport: false,   // ignore remote @import rules
+
+                keepBreaks: true
+
+                // keepSpecialComments: '*' // *,1,0
+
+            },
+
+            files: {
+
+                '<%= core.src %>/dist/<%= app.pkg %>.vendor.min.css': ['<%= core.src %>/.tmp/bower.concat.css'],
+
+                '<%= core.src %>/dist/<%= app.pkg %>.min.css': ['<%= core.src %>/.tmp/app.concat.css']
+
+
+
+                // set dest/src CSS module by module dynamically via dyna-concat task
+
+            }
+
+        }
+
+    },
+
+
+
+    processhtml: {
+
+        options: {
+
+            data: {
+
+                vendorJs: 'dist/<%= app.pkg %>.vendor.min.js',
+
+                vendorCss: 'dist/<%= app.pkg %>.vendor.min.css',
+
+                appJs: 'dist/<%= app.pkg %>.min.js',
+
+                appCss: 'dist/<%= app.pkg %>.min.css'
+
+            }
+
+        },
+
+        dist: {
+
+            files: {
+
+                '<%= app.dev_dist %>/index.html': ['<%= app.src %>/index.html']
+
+            }
+
+        }
+
+    },
+
+
+
+    connect: {
+
+        server: {
+
+            options: {
+
+                port: '<%= server.port %>',
+
+                base: '<%= server.base %>',
+
+                // Keep the server alive indefinitely.
+
+                // Note that if this option is enabled, any tasks specified after this task will never run.
+
+                keepalive: false,
+
+                livereload: false
+
+            }
+
+        }
+
+    },
+
+
+
+    watch: {
+
+        options: {
+
+            livereload: true
+
+        },
+
+        // bower: {
+
+        //     files: ['bower.json'],
+
+        //     tasks: ['bower_concat']
+
+        // },
+
+        less: {
+
+            files: ['<%= app.src %>/**/styles/*.less'],
+
+            tasks: ['dyna-less', 'sync:dev']
+
+        },
+
+        css: {
+
+            files: ['<%= core.src %>/.tmp/bower_concat.css', '<%= app.src %>/**/styles/*.css'],
+
+            tasks: ['dyna-concat', 'dyna-cssmin', 'sync:dev']
+
+        },
+
+        js: {
+
+            files: ['<%= core.src %>/.tmp/bower_concat.js', '<%= app.src %>/**/scripts/**/*.js'],
+
+            tasks: ['jshint', 'dyna-concat', 'dyna-uglify:dev', 'sync:dev']
+
+        },
+
+        indexHtml: {
+
+            files: ['<%= app.src %>/index.html'],
+
+            tasks: ['processhtml', 'sync:dev']
+
+        },
+
+        html: {
+
+            files: ['<%= app.src %>/**/views/**/*.html'],
+
+            tasks: ['sync:dev']
+
+        },
+
+        asset: {
+
+            // data, doc, font, images
+
+            files: ['<%= app.src %>/assets/**', '<%= app.src %>/fonts/**'],
+
+            tasks: ['sync:dev']
+
+        }
+
+    },
+
+
+
+    copy: {
+
+        vendor: {
+
+            files: [
+
+                {
+
+                    cwd: 'bower_components/semantic/dist',
+
+                    src: ['themes/**'],
+
+                    dest: '<%= app.dev_dist %>/dist',
+
+                    expand: true,
+
+                    flatten: false,
+
+                    filter: 'isFile'
+
+                }
+
+            ]
+
+        }
+
+    },
+
+
+
+    sync: {
+
+        dev: {
+
+            files: [
+
+                {
+
+                    expand: true,
+
+                    cwd: '<%= app.src %>',
+
+                    src: ['index.html'],
+
+                    dest: '<%= app.dev_dist %>',
+
+                    flatten: false,
+
+                    filter: 'isFile'
+
+                },
+
+                {
+
+                    expand: true,
+
+                    cwd: '<%= core.src %>/.tmp',
+
+                    src: ['*.min.{js,css}'],
+
+                    dest: '<%= app.dev_dist %>/dist',
+
+                    flatten: false,
+
+                    filter: 'isFile'
+
+                },
+
+                {
+
+                    expand: true,
+
+                    cwd: '<%= core.src %>',
+
+                    src: ['*.html', 'assets/**', 'fonts/**', 'dist/*.min.{js,css}', 'views/**'],
+
+                    dest: '<%= app.dev_dist %>',
+
+                    flatten: false,
+
+                    filter: 'isFile'
+
+                },
+
+                {
+
+                    expand: true,
+
+                    cwd: '<%= modules.root %>',
+
+                    // src: ['**/assets/**', '**/dist/*.min.{js,css}', '**/views/**'],
+
+                    src: '<%= modules.sync_src %>',
+
+                    dest: '<%= app.dev_dist %>/modules',
+
+                    flatten: false,
+
+                    filter: 'isFile'
+
+                }
+
+            ],
+
+            verbose: true,
+
+            updateAndDelete: false
+
+        },
+
+        prod: {
+
+            files: [
+
+                {cwd: '<%= app.dev_dist %>', src: ['**/**'], dest: '<%= app.prod_dist %>'}
+
+            ],
+
+            verbose: false
+
+        }
+
+    },
+
+
+
+    cachebreaker: {
+
+        dev: {
+
+            options: {
+
+                match: ['<%= app.pkg %>.*min.css', '<%= app.pkg %>.*min.js']
+
+            },
+
+            files: {
+
+                src: ['<%= app.dev_dist %>/*.html']
+
+            }
+
+        },
+
+        prod: {
+
+            options: {
+
+                match: ['<%= app.pkg %>.*min.css', '<%= app.pkg %>.*min.js'],
+
+                replacement: function () {
+
+                    // increase the version number in ./bower.json before every production build
+
+                    var now = new Date();
+
+                    var stamp = now.getFullYear() + '_' + (now.getMonth() + 1) + '_' + now.getDate() + '_' + now.getHours() + '_' + now.getMinutes();
+
+                    // FIXME: need to figure out how to read the version number from options (<%= app.version %>)
+
+                    // var build_ver = appConfig.version + '.' + stamp;
+
+                    var build_ver = stamp;
+
+                    return build_ver;
+
+                }
+
+            },
+
+            files: {
+
+                src: ['<%= app.dev_dist %>/*.html']
+
+            }
+
+        }
+
+    }
+
+};
